@@ -1,5 +1,8 @@
 # Instructions
 
+## Pre-Configured Setup
+
+**Note**: The environment setup described below (Step 1) has **already been completed** on the lab server. You can **skip** this section when working remotely.  
 
 ## Step 1: Environment Setup
 
@@ -11,15 +14,6 @@ git clone --recurse-submodules git@github.com:fastmachinelearning/physical-cartp
 ```
 
 **Note**: Using SSH is required because the submodules are cloned using SSH. If you don't have SSH configured, the submodule cloning will fail. 
-
-If you need to run this code on a remote server where SSH is not available, you should first clone the repository locally using the SSH command. Once the repository is cloned locally, you can transfer it to the remote server using `scp`:
-
-
-```bash
-scp -r /path/to/local/physical-cartpole username@remote-server:/path/to/destination/
-```
-
-Replace `/path/to/local/physical-cartpole` with the path to your local repository, `username@remote-server` with your remote server's username and address, and `/path/to/destination/` with the path where you want to place the repository on the server.
 
 
 ### Conda Environment
@@ -218,6 +212,7 @@ You can explore the method `train_network` imported from `SI_Toolkit.Training.Tr
 
 To run the conversion process, execute the following commands:
 ```bash
+export OSTYPE=linux-gnu
 cd Driver/CartPoleSimulation
 python SI_Toolkit_ASF/Run/Convert_Network_With_hls4ml.py
 ```
@@ -241,6 +236,16 @@ This step focuses on testing the trained model by controlling the physical Cartp
 
 Please also have a look at the [Calibration section](./README.md#calibration) of the README.
 
+### Note on Local Execution
+
+This step must be run locally on your personal machine. It cannot be executed from the lab server.
+The physical Cartpole hardware (motor and sensors) must be directly connected to your machine via USB.
+If you need to copy the project files from the lab server to your local system, use the following command (replace with your ASU ID):
+
+```bash
+scp -r asuad\\yourasuID@129.219.30.13:~/project/cartpole/physical-cartpole ~/Desktop/physical-cartpole
+```
+This will copy the entire physical-cartpole directory to your Desktop.
 
 ### 5.1 Set the Controller
 
@@ -404,7 +409,7 @@ Start Vivado (you may need to use VNC or XQuartz if running on a remote server t
 
 14. Return to the terminal and execute the following script to populate the `src` folder with necessary files:
     ```bash
-    ./Firmware/create_symlinks_cartpole.sh
+    cd Firmware && ./create_symlinks_cartpole.sh
     ```
 
 15. Return to the Vitis project window and observe the `src` folder being populated with new files.

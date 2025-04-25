@@ -121,6 +121,8 @@ Follow these steps to evaluate your trained neural network using the Cartpole Si
      ```
 
 2. **Launch the GUI**:
+
+   - Open a terminal inside your VNCViewer session.
    - Execute the commands below to start the Cartpole Simulator GUI:
      ```bash
      chmod +x ./step3.sh
@@ -340,7 +342,13 @@ There are two parts to the system implementation:
 ### Generating the FPGA Bitstream (Executable)
 
 1. Vivado 2020.1 is required for this step (GUI version).<br>
-Start Vivado (you may need to use VNC or XQuartz if running on a remote server to be able to use the GUI. In this case you may need to use the `-Y` flag in the ssh command).
+   - **Start Vivado**: open a terminal inside your VNCViewer session and run `vivado`.
+
+2. Install the required board definition:
+   - Go to the **Tools** menu in the top toolbar and select **XHub stores**, then press OK.
+   - If a path is required, provide: `~/project/physical-cartpole/FPGA/VivadoProjects`
+   - Select *Boards*, select *Diligent Inc* -> *Zybo* -> *Zybo Z7-20*.
+   - Press the install button ⤓
 
 2. Inside the Vivado GUI:
 

@@ -385,7 +385,7 @@ There are two parts to the system implementation:
     ```bash
     vitis -version
     ```
-   Once confirmed, start Vitis by running:
+   Once confirmed, open a terminal inside your VNCViewer session and start Vitis by running:
     ```bash
     vitis
     ```

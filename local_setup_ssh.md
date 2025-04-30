@@ -53,6 +53,15 @@ and it will also be available as a host in VS Code.
 3. Type: `Remote-SSH: Connect to Host...`
 4. Choose: `hls4ml-workshop`
 
+### Activate Conda environemnt and Vivado
+
+Open a terminal and run:
+
+```bash
+source ~/.bashrcConda
+```
+This must be done for every new terminal.
+
 ---
 
 ## Step 2: Set Up GUI Access via RealVNC Viewer

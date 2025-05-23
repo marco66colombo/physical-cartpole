@@ -32,4 +32,4 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
-          tags: gcr.io/${{ env.GCP_PROJECT_ID }}/student-desktop:latest
+          tags: gcr.io/${{ vars.GCP_PROJECT_ID }}/student-desktop:latest

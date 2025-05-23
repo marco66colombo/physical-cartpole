@@ -31,4 +31,4 @@ jobs:
           platforms: linux/amd64
           tags: gcr.io/${{ vars.GCP_PROJECT_ID }}/student-desktop:latest
           secrets: |
-            "gcpcreds=${{ secrets.GCP_SA_KEY }}"
+            gcpcreds=${{ secrets.GCP_SA_KEY }}

@@ -24,13 +24,15 @@ jobs:
         uses: google-github-actions/auth@v1
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
-  
-      - name: Configure Docker for GCR
+
+      - name: Configure Docker to use gcloud as credential helper
         run: |
-          gcloud auth configure-docker
-  
+          gcloud config set project ${{ vars.GCP_PROJECT_ID }}
+          gcloud auth configure-docker gcr.io
+    
       - name: Build and Push Docker image
         run: |
-          IMAGE=gcr.io/${{ vars.GCP_PROJECT_ID }}/student-desktop:latest
-          docker build -t $IMAGE .
-          docker push $IMAGE
+          IMAGE_NAME=gcr.io/${{ vars.GCP_PROJECT_ID }}/student-desktop:latest
+          docker build -t $IMAGE_NAME:$GITHUB_SHA -t $IMAGE_NAME:latest .
+          docker push $IMAGE_NAME:$GITHUB_SHA
+          docker push $IMAGE_NAME:latest

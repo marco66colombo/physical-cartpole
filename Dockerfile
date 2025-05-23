@@ -26,7 +26,7 @@ USER student
 COPY environment.yml .
 RUN conda env create -f environment.yml
 ENV PATH="/opt/conda/envs/student-env/bin:$PATH"
-RUN conda run -n student-env pip install -r requirements.txt
+# RUN conda run -n student-env pip install -r requirements.txt
 
 # Expose GUI ports
 EXPOSE 5901 6080

@@ -31,13 +31,12 @@ ENV PATH="/opt/conda/envs/student-env/bin:$PATH"
 # Expose GUI ports
 EXPOSE 5901 6080
 
-# Start GUI (browser-ready)
-CMD ["sh", "-c", "\
-  export DISPLAY=:1 && \
-  mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix && \
-  Xvfb :1 -screen 0 1024x768x16 & \
-  sleep 2 && \
-  dbus-launch startxfce4 & \
-  x11vnc -display :1 -forever -nopw -shared -bg && \
-  websockify --web=/usr/share/novnc/ 6080 localhost:5901 \
-"]
+# Copy startup script
+COPY start.sh /home/student/start.sh
+RUN chmod +x /home/student/start.sh && chown student:student /home/student/start.sh
+
+# Set final user
+USER student
+
+# Start GUI using the script
+CMD ["/home/student/start.sh"]

@@ -9,14 +9,15 @@ on:
 
 env:
   REGION: us-central1
-  SERVICE_NAME: student-desktop  # Your Cloud Run service name
+  REPOSITORY: docker-repo
+  SERVICE_NAME: student-desktop
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     env:
-      IMAGE: gcr.io/${{ vars.GCP_PROJECT_ID }}/student-desktop:${{ github.sha }}
+      IMAGE: us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/docker-repo/student-desktop:${{ github.sha }}
 
     steps:
       - name: Checkout code

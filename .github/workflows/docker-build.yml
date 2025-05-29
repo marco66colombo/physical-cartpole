@@ -45,4 +45,6 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
-          tags: ${{ env.IMAGE }}
+          tags: |
+            ${{ env.IMAGE }}
+            us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/docker-repo/student-desktop:latest

@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      IMAGE: gcr.io/${{ secrets.GCP_PROJECT_ID }}/student-desktop:${{ github.sha }}
+      IMAGE: gcr.io/${{ vars.GCP_PROJECT_ID }}/student-desktop:${{ github.sha }}
 
     steps:
       - name: Checkout code

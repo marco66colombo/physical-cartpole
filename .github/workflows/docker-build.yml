@@ -7,9 +7,16 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  REGION: us-central1
+  SERVICE_NAME: student-desktop  # Your Cloud Run service name
+
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
+    env:
+      IMAGE: gcr.io/${{ secrets.GCP_PROJECT_ID }}/student-desktop:${{ github.sha }}
 
     steps:
       - name: Checkout code
@@ -17,21 +24,28 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Authenticate to GCR
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker gcr.io
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push to GCR
+      - name: Login to Google Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: gcr.io
+          username: _json_key
+          password: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Build and push Docker image to GCR
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           platforms: linux/amd64
-          tags: gcr.io/${{ vars.GCP_PROJECT_ID }}/student-desktop:latest
+          tags: ${{ env.IMAGE }}

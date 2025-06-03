@@ -24,11 +24,5 @@ COPY environment.yml .
 RUN conda env create -f environment.yml || true
 RUN conda run -n student-env pip install -r requirements.txt
 
-# Ensure permissions are correct (optional, depending on base image's user)
-RUN chown -R developer:developer /home/developer
-
-# Switch back to non-root user (as used by accetto's image)
-USER developer
-
 # Set working directory
-WORKDIR /home/developer/my-code
+WORKDIR /home/cartpole-demo

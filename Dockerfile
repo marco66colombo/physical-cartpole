@@ -1,42 +1,34 @@
-FROM condaforge/miniforge3:latest
+FROM accetto/ubuntu-vnc-xfce-g3
 
-# System setup
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y \
-    xfce4 xfce4-goodies x11vnc xvfb \
-    novnc websockify net-tools \
-    xterm terminator firefox \
-    git sudo locales \
-    qt5-qmake qtbase5-dev build-essential \
-    dbus-x11 \
-    && apt-get clean
+# Set the default working directory
+WORKDIR /home/cartpole-demo
 
-# Set up user and environment
-RUN useradd -m student && echo "student:student" | chpasswd && adduser student sudo
+# Install wget and bash for Conda installer
+USER root
+RUN apt-get update && apt-get install -y wget bash && \
+    rm -rf /var/lib/apt/lists/*
 
-WORKDIR /home/student
+# Install Miniconda (or you can switch to Mambaforge if preferred)
+ENV CONDA_DIR=/opt/conda
+ENV PATH=$CONDA_DIR/bin:$PATH
 
-# Copy all repo files into container
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p $CONDA_DIR && \
+    rm /tmp/miniconda.sh
+
+# Copy your code into the image
 COPY . .
-RUN sudo chown -R student:student /home/student
 
-USER student
-
-# Create Conda env and install pip deps
+# Optionally, create a conda env from environment.yml
 COPY environment.yml .
-RUN conda env create -f environment.yml
-ENV PATH="/opt/conda/envs/student-env/bin:$PATH"
-# RUN conda run -n student-env pip install -r requirements.txt
+RUN conda env create -f environment.yml || true
+RUN conda run -n student-env pip install -r requirements.txt
 
-# Expose GUI ports
-EXPOSE 5901 6080
+# Ensure permissions are correct (optional, depending on base image's user)
+RUN chown -R developer:developer /home/developer
 
-# Copy startup script
-COPY start.sh /home/student/start.sh
-RUN chmod +x /home/student/start.sh && chown student:student /home/student/start.sh
+# Switch back to non-root user (as used by accetto's image)
+USER developer
 
-# Set final user
-USER student
-
-# Start GUI using the script
-CMD ["/home/student/start.sh"]
+# Set working directory
+WORKDIR /home/developer/my-code

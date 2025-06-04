@@ -13,14 +13,17 @@ ENV PATH=$CONDA_DIR/bin:$PATH
 
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -b -p $CONDA_DIR && \
-    rm /tmp/miniconda.sh
+    rm /tmp/miniconda.sh && \
+    $CONDA_DIR/bin/conda init bash && \
+    echo "source $CONDA_DIR/etc/profile.d/conda.sh" >> /home/headless/.bashrc && \
+    echo "conda activate base" >> /home/headless/.bashrc
 
 RUN mkdir -p /home/headless/cartpole-demo
 COPY . /home/headless/cartpole-demo/
 
 # Optionally, create a conda env from environment.yml
 COPY environment.yml /home/headless/cartpole-demo/
-RUN conda env create -f environment.yml || true
+RUN conda env create -f /home/headless/cartpole-demo/environment.yml || true
 # RUN conda run -n student-env pip install -r requirements.txt
 
 RUN chmod 666 /etc/passwd /etc/group

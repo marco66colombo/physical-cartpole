@@ -38,7 +38,8 @@ RUN conda env create -f /home/headless/cartpole-demo/environment.yml || true
 
 RUN chown -R headless:headless /home/headless/cartpole-demo
 
-RUN conda run -n student-env pip install -r /home/headless/cartpole-demo/requirements.txt
+RUN cd /home/headless/cartpole-demo && \
+    conda run -n student-env pip install -r requirements.txt
 
 RUN chmod 666 /etc/passwd /etc/group
 

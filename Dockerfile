@@ -16,11 +16,10 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     rm /tmp/miniconda.sh
 
 RUN mkdir -p /home/headless/cartpole-demo
-WORKDIR /home/headless/cartpole-demo
-COPY . .
+COPY . /home/headless/cartpole-demo/
 
 # Optionally, create a conda env from environment.yml
-COPY environment.yml .
+COPY environment.yml /home/headless/cartpole-demo/
 RUN conda env create -f environment.yml || true
 # RUN conda run -n student-env pip install -r requirements.txt
 

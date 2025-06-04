@@ -29,3 +29,4 @@ RUN chmod 666 /etc/passwd /etc/group
 # RUN chown -R headless:headless /home/headless/cartpole-demo
 # USER headless
 # RUN echo "source activate student-env" >> ~/.bashrc
+USER "${HEADLESS_USER_ID}"

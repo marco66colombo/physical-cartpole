@@ -1,10 +1,9 @@
 FROM accetto/ubuntu-vnc-xfce-g3
 
-# Set the default working directory
-WORKDIR /home/cartpole-demo
 
-# Install wget and bash for Conda installer
-USER root
+# Switch to root for system operations
+USER 0
+
 RUN apt-get update && apt-get install -y wget bash && \
     rm -rf /var/lib/apt/lists/*
 
@@ -16,13 +15,17 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     bash /tmp/miniconda.sh -b -p $CONDA_DIR && \
     rm /tmp/miniconda.sh
 
-# Copy your code into the image
+RUN mkdir -p /home/headless/cartpole-demo
+WORKDIR /home/headless/cartpole-demo
 COPY . .
 
 # Optionally, create a conda env from environment.yml
 COPY environment.yml .
 RUN conda env create -f environment.yml || true
-RUN conda run -n student-env pip install -r requirements.txt
+# RUN conda run -n student-env pip install -r requirements.txt
 
-# Set working directory
-WORKDIR /home/cartpole-demo
+RUN chmod 666 /etc/passwd /etc/group
+
+RUN chown -R headless:headless /home/headless/cartpole-demo
+USER headless
+# RUN echo "source activate student-env" >> ~/.bashrc

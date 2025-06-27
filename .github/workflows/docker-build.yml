@@ -14,7 +14,7 @@ env:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: fastml
 
     env:
       IMAGE: us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/docker-repo/student-desktop:${{ github.sha }}

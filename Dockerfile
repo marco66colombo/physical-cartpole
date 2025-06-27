@@ -38,13 +38,11 @@ RUN conda env create -f /home/headless/cartpole-demo/environment.yml
 
 RUN chown -R headless:headless /home/headless/cartpole-demo
 
-RUN ls -la /home/headless/cartpole-demo/Driver/CartPoleSimulation/SI_Toolkit && \
-    cat /home/headless/cartpole-demo/Driver/CartPoleSimulation/SI_Toolkit/setup.py || echo "setup.py not found"
-
 SHELL ["/bin/bash", "-c"]
 RUN source /opt/conda/etc/profile.d/conda.sh && \
+    cd /home/headless/cartpole-demo && \
     conda activate student-env && \
-    pip install --no-cache-dir -r /home/headless/cartpole-demo/requirements.txt
+    pip install --no-cache-dir -r requirements.txt
 
 RUN chmod 666 /etc/passwd /etc/group
 

@@ -91,6 +91,7 @@ set proj_dir [get_property directory [current_project]]
 
 # Set project properties
 set obj [current_project]
+# TODO: check that part0.1.2 works instead of part0.1
 set_property -name "board_part" -value "digilentinc.com:zybo-z7-20:part0:1.0" -objects $obj
 set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/../../../.Xilinx/Vivado/2020.1/xhub/board_store/xilinx_board_store"]" -objects $obj
 set_property -name "compxlib.activehdl_compiled_library_dir" -value "$proj_dir/${_xil_proj_name_}.cache/compile_simlib/activehdl" -objects $obj

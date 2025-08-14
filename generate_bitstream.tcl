@@ -1,5 +1,4 @@
 # Load user-defined board repo path from vivado_init.tcl if configured
-# (optional: you may have already symlinked ~/.Xilinx/Vivado/init.tcl)
 if {[file exists "$::env(HOME)/.Xilinx/Vivado/Vivado_init.tcl"]} {
   source "$::env(HOME)/.Xilinx/Vivado/Vivado_init.tcl"
 }

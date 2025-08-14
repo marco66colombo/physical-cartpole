@@ -1,4 +1,4 @@
-# ===== Vitis 2020.1 Automation for CartPoleFirmware (math link fix) =====
+# ===== Vitis 2020.1 Automation for CartPoleFirmware =====
 
 # --- Paths ---
 set ws_path "$::env(HOME)/physical-cartpole/Firmware/VitisProjects"
@@ -14,11 +14,10 @@ file mkdir $ws_path
 setws $ws_path
 
 # --- Create HW platform & BSP ---
-# (These commands are available in 2020.1 even if marked deprecated.)
 createhw  -name $hw_name  -hwspec $hw_xsa
 createbsp -name $bsp_name -hwproject $hw_name -proc $proc_name -os standalone
 
-# --- Create application (tie it to the BSP you just made) ---
+# --- Create application ---
 createapp -name $app_name -hwproject $hw_name -bsp $bsp_name -proc $proc_name -os standalone -lang C -app "Empty Application"
 
 # --- Clean default sources from the template ---
@@ -30,7 +29,7 @@ if {[file exists $src_dir]} {
     puts "Deleted existing .c and .h files from $src_dir"
 }
 
-# --- Link your sources (symlinks) ---
+# --- Link to sources (symlinks) ---
 if {[file exists $symlink_script]} {
     puts "Running create_symlinks_cartpole.sh ..."
     catch {exec bash -c "cd $::env(HOME)/physical-cartpole/Firmware && chmod +x ./create_symlinks_cartpole.sh && ./create_symlinks_cartpole.sh"} res
@@ -39,10 +38,7 @@ if {[file exists $symlink_script]} {
     puts "Symlink script not found at $symlink_script — skipping."
 }
 
-# ==================== MATH LIBRARY FIX ====================
-# Put libm into the APP's Libraries (-l) list so it ends up inside
-# the managed --start-group/--end-group block during link.
-# Also remove any stray -lm from misc to avoid ordering issues.
+# ==================== MATH LIBRARY IMPORT ====================
 
 # Remove any previous settings that might confuse ordering
 catch { app config -name $app_name -remove linker-misc {-lm} }
@@ -51,7 +47,7 @@ catch { app config -name $app_name -remove libraries m }
 # Correct placement: Libraries list
 app config -name $app_name -add libraries m
 
-# (Optional) make sure C99/gnu99 is used for math builtins/macros
+# make sure C99/gnu99 is used for math builtins/macros
 catch { app config -name $app_name -add compiler-misc {-std=gnu99} }
 
 # Persist

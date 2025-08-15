@@ -31,16 +31,16 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     echo "source $CONDA_DIR/etc/profile.d/conda.sh" >> /home/headless/.bashrc && \
     echo "conda activate base" >> /home/headless/.bashrc
 
-RUN mkdir -p /home/headless/cartpole-demo
-COPY . /home/headless/cartpole-demo/
+RUN mkdir -p /home/headless/physical-cartpole
+COPY . /home/headless/physical-cartpole/
 
-RUN conda env create -f /home/headless/cartpole-demo/environment.yml
+RUN conda env create -f /home/headless/physical-cartpole/environment.yml
 
-RUN chown -R headless:headless /home/headless/cartpole-demo
+RUN chown -R headless:headless /home/headless/physical-cartpole
 
 SHELL ["/bin/bash", "-c"]
 RUN source /opt/conda/etc/profile.d/conda.sh && \
-    cd /home/headless/cartpole-demo && \
+    cd /home/headless/physical-cartpole && \
     conda activate student-env && \
     pip install --no-cache-dir -r requirements.txt
 

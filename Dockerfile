@@ -34,6 +34,10 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 RUN mkdir -p /home/headless/physical-cartpole
 COPY . /home/headless/physical-cartpole/
 
+# Accept ToS for Anaconda channels used by "defaults"
+RUN $CONDA_DIR/bin/conda tos accept --channel https://repo.anaconda.com/pkgs/main && \
+    $CONDA_DIR/bin/conda tos accept --channel https://repo.anaconda.com/pkgs/r
+
 RUN conda env create -f /home/headless/physical-cartpole/environment.yml
 
 RUN chown -R headless:headless /home/headless/physical-cartpole

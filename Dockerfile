@@ -40,7 +40,7 @@ RUN wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Mi
 
 # --- App lives in home ---
 WORKDIR /home/${USER}/app
-COPY --chown=${USER}:${USER} environment.yml requirements.txt* ./
+COPY --chown=${USER}:${USER} . .
 
 # Create conda env from environment.yml
 ARG ENV_NAME=student-env
@@ -55,8 +55,6 @@ RUN echo "source $CONDA_DIR/etc/profile.d/conda.sh" >> /home/${USER}/.bashrc \
  && echo "conda activate ${ENV_NAME}" >> /home/${USER}/.bashrc \
  && chown ${USER}:${USER} /home/${USER}/.bashrc
 
-# Copy the rest of your app
-COPY --chown=${USER}:${USER} . .
 
 # --- Vivado libtinfo compat ---
 RUN ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5

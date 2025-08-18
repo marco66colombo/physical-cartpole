@@ -1,53 +1,65 @@
-FROM accetto/ubuntu-vnc-xfce-g3
+FROM ubuntu:22.04
 
-# Switch to root for system operations
-USER 0
+ENV DEBIAN_FRONTEND=noninteractive
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN apt-get update && apt-get install -y \
-        wget \
-        bash \
-        git \
-        qtbase5-dev \
-        libxkbcommon-x11-0 \
-        qt5-qmake \
-        qtchooser \
-        qtbase5-dev-tools \
-        libxcb-cursor0 \
-        libxcb-icccm4 \
-        libxcb-image0 \
-        libxcb-keysyms1 \
-        libxcb-render-util0 \
-        libgl1 \
-        libegl1 \
-        && rm -rf /var/lib/apt/lists/*
+# --- System packages ---
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sudo wget curl ca-certificates git xz-utils bzip2 locales tzdata \
+    openssh-server xauth x11-apps \
+    libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
+    libxcb-keysyms1 libxcb-render-util0 libgl1 libegl1 libxrandr2 \
+    libxrender1 libxinerama1 libfontconfig1 libfreetype6 libxi6 libtinfo6 \
+ && rm -rf /var/lib/apt/lists/*
 
+# --- Create user ---
+ARG USER=student
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g ${GID} ${USER} \
+ && useradd -m -u ${UID} -g ${GID} -s /bin/bash ${USER} \
+ && echo "${USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USER}
+
+# --- SSHD setup ---
+RUN mkdir -p /var/run/sshd /home/${USER}/.ssh \
+ && chown -R ${USER}:${USER} /home/${USER}/.ssh \
+ && sed -i 's/#X11Forwarding yes/X11Forwarding yes/' /etc/ssh/sshd_config \
+ && sed -i 's/#X11UseLocalhost yes/X11UseLocalhost yes/' /etc/ssh/sshd_config \
+ && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config \
+ && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
+EXPOSE 22
+
+# --- Miniforge (conda-forge only) ---
 ENV CONDA_DIR=/opt/conda
 ENV PATH=$CONDA_DIR/bin:$PATH
+RUN wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O /tmp/m.sh \
+ && bash /tmp/m.sh -b -p $CONDA_DIR \
+ && rm /tmp/m.sh \
+ && conda config --set channel_priority strict \
+ && conda config --add channels conda-forge
 
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
-    bash /tmp/miniconda.sh -b -p $CONDA_DIR && \
-    rm /tmp/miniconda.sh && \
-    $CONDA_DIR/bin/conda init bash && \
-    echo "source $CONDA_DIR/etc/profile.d/conda.sh" >> /home/headless/.bashrc && \
-    echo "conda activate base" >> /home/headless/.bashrc
+# --- App lives in home ---
+WORKDIR /home/${USER}/app
+COPY --chown=${USER}:${USER} environment.yml requirements.txt* ./
 
-RUN mkdir -p /home/headless/physical-cartpole
-COPY . /home/headless/physical-cartpole/
+# Create conda env from environment.yml
+ARG ENV_NAME=student-env
+RUN conda env create -f environment.yml -n ${ENV_NAME} \
+ && conda clean -afy \
+ && if [ -f requirements.txt ] && [ -s requirements.txt ]; then \
+      conda run -n ${ENV_NAME} pip install --no-cache-dir -r requirements.txt ; \
+    fi
 
-# Accept ToS for Anaconda channels used by "defaults"
-RUN $CONDA_DIR/bin/conda tos accept --channel https://repo.anaconda.com/pkgs/main && \
-    $CONDA_DIR/bin/conda tos accept --channel https://repo.anaconda.com/pkgs/r
+# Auto-activate env for user
+RUN echo "source $CONDA_DIR/etc/profile.d/conda.sh" >> /home/${USER}/.bashrc \
+ && echo "conda activate ${ENV_NAME}" >> /home/${USER}/.bashrc \
+ && chown ${USER}:${USER} /home/${USER}/.bashrc
 
-RUN conda env create -f /home/headless/physical-cartpole/environment.yml
+# Copy the rest of your app
+COPY --chown=${USER}:${USER} . .
 
-RUN chown -R headless:headless /home/headless/physical-cartpole
+# --- Vivado libtinfo compat ---
+RUN ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
 
-SHELL ["/bin/bash", "-c"]
-RUN source /opt/conda/etc/profile.d/conda.sh && \
-    cd /home/headless/physical-cartpole && \
-    conda activate student-env && \
-    pip install --no-cache-dir -r requirements.txt
-
-RUN chmod 666 /etc/passwd /etc/group
-
-USER "${HEADLESS_USER_ID}"
+USER ${USER}
+CMD ["/usr/sbin/sshd", "-D", "-e"]

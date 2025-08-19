@@ -18,15 +18,28 @@ ARG UID=1000
 ARG GID=1000
 RUN groupadd -g ${GID} ${USER} \
  && useradd -m -u ${UID} -g ${GID} -s /bin/bash ${USER} \
- && echo "${USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USER}
+ && echo "${USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USER} \
+ && mkdir -p /home/${USER}/.ssh \
+ && chown -R ${USER}:${USER} /home/${USER}/.ssh \
+ && chmod 700 /home/${USER}/.ssh
 
 # --- SSHD setup ---
-RUN mkdir -p /var/run/sshd /home/${USER}/.ssh \
- && chown -R ${USER}:${USER} /home/${USER}/.ssh \
- && sed -i 's/#X11Forwarding yes/X11Forwarding yes/' /etc/ssh/sshd_config \
- && sed -i 's/#X11UseLocalhost yes/X11UseLocalhost yes/' /etc/ssh/sshd_config \
- && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config \
- && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
+# Important: config matches what deploy.sh mounts via ConfigMap
+RUN mkdir -p /var/run/sshd \
+ && echo 'Port 22
+PasswordAuthentication no
+PermitRootLogin no
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+X11Forwarding yes
+X11UseLocalhost no
+XAuthLocation /usr/bin/xauth
+AddressFamily inet
+AllowTcpForwarding yes
+PermitTTY yes
+UsePAM no
+Subsystem sftp internal-sftp
+' > /etc/ssh/sshd_config
 EXPOSE 22
 
 # --- Miniforge (conda-forge only) ---
@@ -55,9 +68,11 @@ RUN echo "source $CONDA_DIR/etc/profile.d/conda.sh" >> /home/${USER}/.bashrc \
  && echo "conda activate ${ENV_NAME}" >> /home/${USER}/.bashrc \
  && chown ${USER}:${USER} /home/${USER}/.bashrc
 
-
 # --- Vivado libtinfo compat ---
 RUN ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
 
-USER ${USER}
+# --- Entrypoint ---
+# Must run as root so sshd can bind port 22 and read host keys.
+# Student will still be the login user defined in authorized_keys.
+USER root
 CMD ["/usr/sbin/sshd", "-D", "-e"]

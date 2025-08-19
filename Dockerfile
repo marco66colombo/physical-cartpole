@@ -26,7 +26,8 @@ RUN groupadd -g ${GID} ${USER} \
 # --- SSHD setup ---
 # Important: config matches what deploy.sh mounts via ConfigMap
 RUN mkdir -p /var/run/sshd \
- && echo 'Port 22
+ && cat > /etc/ssh/sshd_config <<'EOF'
+Port 22
 PasswordAuthentication no
 PermitRootLogin no
 PubkeyAuthentication yes
@@ -39,7 +40,7 @@ AllowTcpForwarding yes
 PermitTTY yes
 UsePAM no
 Subsystem sftp internal-sftp
-' > /etc/ssh/sshd_config
+EOF
 EXPOSE 22
 
 # --- Miniforge (conda-forge only) ---

@@ -18,10 +18,11 @@ ARG UID=1000
 ARG GID=1000
 RUN groupadd -g ${GID} ${USER} \
  && useradd -m -u ${UID} -g ${GID} -s /bin/bash ${USER} \
+ && usermod -U ${USER} && passwd -d ${USER} \ 
  && echo "${USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USER} \
  && mkdir -p /home/${USER}/.ssh \
  && chown -R ${USER}:${USER} /home/${USER}/.ssh \
- && chmod 700 /home/${USER}/.ssh
+ && chmod 700 /home/${USER} /home/${USER}/.ssh
 
 # --- SSHD setup ---
 # Important: config matches what deploy.sh mounts via ConfigMap
@@ -53,7 +54,7 @@ RUN wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Mi
  && conda config --add channels conda-forge
 
 # --- App lives in home ---
-WORKDIR /home/${USER}/app
+WORKDIR /home/${USER}
 COPY --chown=${USER}:${USER} . .
 
 # Create conda env from environment.yml

@@ -4,6 +4,15 @@
 
 **Note**: The environment setup described below (Step 1) has **already been completed** on the lab server. You can **skip** this section when working remotely.  
 
+### Cloud Lab Resources
+
+Automation for the Google Cloud deployment (student desktop container, Kubernetes manifests, operator scripts) lives in the `release/` directory. Start with:
+
+- `release/README.md` – overview of the bundle contents.
+- `release/cloud-lab.md` – end-to-end guide for provisioning a fresh GCP project, configuring the GitHub workflow, and deploying the per-student lab environment.
+
+Use these files if you need to rebuild the hosted lab or reproduce the environment for another demo.
+
 ## Step 1: Environment Setup
 
 ### Clone the Github repository
@@ -332,145 +341,125 @@ This calibration saves system-specific parameters, which will be reused in the S
 
 ---
 
+# Step 6: Implementation
 
-## Step 6: Implementation
+The system implementation consists of two main parts:  
+1. **Generating the NN model bitstream**  
+2. **Generating the full Zynq SoC project including board interfaces**
 
-There are two parts to the system implementation: 
-1. generating the NN model bitstream.
-2. generating the full Zynq SoC project including board interfaces.
+---
 
-### Generating the FPGA Bitstream (Executable)
+## 6.1 Preparation
 
-1. Vivado 2020.1 is required for this step (GUI version).<br>
-   - **Start Vivado**: open a terminal inside your VNCViewer session and run `vivado`.
+Before running any implementation scripts:
 
-2. Install the required board definition:
-   - Go to the **Tools** menu in the top toolbar and select **XHub stores**, then press OK.
-   - If a path is required, provide: `~/project/physical-cartpole/FPGA/VivadoProjects`
-   - Select *Boards*, select *Diligent Inc* -> *Zybo* -> *Zybo Z7-20*.
-   - Press the install button ⤓
+1. **Ensure Vivado 2020.1 and Vitis 2020.1 are installed and available in your environment.**
 
-2. Inside the Vivado GUI:
+2. **Comment out unnecessary lines in** `Firmware/create_symlinks_cartpole.sh`:
 
-    - Go to the **Tools** menu in the top toolbar and select **Run Tcl Script**.
+   Open the file:
+   ```bash
+   nano ~/physical-cartpole/Firmware/create_symlinks_cartpole.sh
+   ```
+   Locate the section:
+   ```bash
+   # For NeuralImitator on Zynq (First create NeuralImitator project in Vitis!)
+   :'
+   declare -a directories=(
+     "./Src/NeuralImitatorZynq ./VitisProjects/NeuralImitator/src"
+     "./Src/Zynq ./VitisProjects/NeuralImitator/src/Zynq"
+   )
+   '
+   ```
+   Ensure the above block is commented as shown, so it does not run during the CartPoleFirmware build.
 
-    - Ensure that you have the board definition for `digilentinc.com:zybo-z7-20:part0:1.0` installed. This board definition is required for the implementation.
+3. **Update firmware source files with your hardware-specific values:**
+   - **Edit** `~/physical-cartpole/Firmware/Src/CartPoleFirmware/parameters.c`  
+     Replace the following lines (values shown are examples — use your own from Step 5 calibration):
+     ```c
+     float MOTOR_CORRECTION[3] = {0.6310468, 0.0472680, 0.0408973};
+     float ANGLE_HANGING_POLOLU = 783.0;
+     ```
 
-    - Choose the script file `CartpoleDriverZynq_new.tcl` located in the `FPGA/VivadoProjects/` directory, located in the base directory of the cloned GitHub repository, and execute it. This script loads all files needed for implementation.
+   - **Edit** `~/physical-cartpole/Firmware/Src/Zynq/neural-imitator.c`  
+     Update the normalization and denormalization vectors with the new model data from:
+     ```
+     Driver/CartPoleSimulation/SI_Toolkit_ASF/Experiments/Experiment-1/Models/[ModelName]
+     ```
+     Replace:
+     ```c
+     float hls_normalize_a[]   = {...};
+     float hls_normalize_b[]   = {...};
+     float hls_denormalize_A[] = {...};
+     float hls_denormalize_B[] = {...};
+     ```
+     with values from:
+     - `normalization_vec_a.csv`
+     - `normalization_vec_b.csv`
+     - `denormalization_vec_A.csv`
+     - `denormalization_vec_B.csv`
 
-3. After the script finishes executing, click on **Generate Bitstream**.
+     Also update input/output size and precision in `neural-imitator.c` and `neural-imitator.h` if required.
 
-4. Once the bitstream generation is complete, click **OK** on the dialog box that appears.
+4. **Make the automation scripts executable:**
+   ```bash
+   chmod +x ~/physical-cartpole/install_zybo_board.sh
+   chmod +x ~/physical-cartpole/generate_bitstream.tcl
+   chmod +x ~/physical-cartpole/generate_vitis_project.tcl
+   ```
 
-5. The message **"Bitstream Generation Successfully Completed"** will be displayed.
+---
 
-6. If you wish to observe the implementation layout on the FPGA, you can choose **Open Implemented Design**; otherwise, choose **Cancel**.
+## 6.2 Generating the FPGA Bitstream
 
-7. Go to **File** → **Export** → **Export Hardware**. Choose **Platform Type** as **Fixed** and click **Next**.
+Run the following commands:
 
-8. Choose **Output** as **Include Bitstream** and click **Next**.
+```bash
+cd ~/physical-cartpole
+./install_zybo_board.sh
 
-9. Leave the default choices and click **Next**.
+cd ~/physical-cartpole/FPGA/VivadoProjects
+vivado -mode batch -source ~/physical-cartpole/generate_bitstream.tcl
+```
+```bash
+MALLOC_CHECK_=0 MALLOC_ARENA_MAX=2 \
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2 \
+vivado -mode batch -source ~/physical-cartpole/generate_bitstream.tcl
 
-10. Click **Finish**.
+```
 
-11. Close Vivado.
+The Vivado automation script will:
+- Install the Zybo Z7-20 board definition (if not already installed)
+- Load the design
+- Generate the bitstream
+- Export the hardware definition including the bitstream
 
+---
 
-### Generating the SoC Project
+## 6.3 Generating the SoC Project and BOOT.bin
 
-1. Navigate to the `Firmware` directory , located in the base directory of the cloned GitHub repository, using the terminal.
+Once the bitstream is generated:
 
-2. Ensure that Vitis 2020.1 is installed and available. You can check the version by running:
-    ```bash
-    vitis -version
-    ```
-   Once confirmed, open a terminal inside your VNCViewer session and start Vitis by running:
-    ```bash
-    vitis
-    ```
+```bash
+cd ~/physical-cartpole
+xsct generate_vitis_project.tcl > vitis_output.log 2>&1
+```
 
-4. In the **Select Workspace Directory** dialog box, choose the `Firmware/VitisProjects`.
+The Vitis automation script will:
+- Create the Vitis workspace and hardware platform
+- Create and configure the CartPoleFirmware application
+- Link source files (via `create_symlinks_cartpole.sh`)
+- Add the math library `-lm` to the build
+- Build the firmware ELF
+- Generate the FSBL
+- Package the `BOOT.bin` containing FSBL, bitstream, and application ELF
 
-5. Click **Launch** to open the Vitis workspace.
+The `BOOT.bin` file will be located in the workspace output path printed in the script log. Copy this file to your SD card to program the FPGA.
 
-6. In the Vitis GUI, create a new **Application Project**.
+---
 
-7. Under the **Create New Platform from Hardware (XSA)** tab, select the XSA file by navigating to:
-    ```bash
-    FPGA/VivadoProjects/CartPoleDriverZynq/cartpole_driver_design_wrapper.xsa
-    ```
-
-8. Make sure the **Generate Boot Components** box is selected, then click **Next**.
-
-9. In the **Application Project Details** dialog box:
-    - Enter `CartPoleFirmware` as the **Application Project Name**.
-    - Choose `ps7_cortexa9_0` as the processor.
-
-10. Click **Next**.
-
-11. Click **Next** again and then **Finish** to create the project.
-
-12. A new project window will open. In this window, expand the `src` folder.
-
-13. Delete all existing `.c` and `.h` files inside the `src` folder.
-
-14. Return to the terminal and execute the following script to populate the `src` folder with necessary files:
-    ```bash
-    cd Firmware && ./create_symlinks_cartpole.sh
-    ```
-
-15. Return to the Vitis project window and observe the `src` folder being populated with new files.
-
-
-16. Open `parameters.c` inside the `src` folder and edit the following values, which are specific to the cartpole hardware and were generated in Step 5:<br><br>
-   **Important**: The values below are just examples. Be sure to replace them with the actual values generated for your physical setup.
-      ```c
-      Line 52: float MOTOR_CORRECTION[3] = {0.6310468, 0.0472680, 0.0408973};
-      Line 54: float ANGLE_HANGING_POLOLU = 783.0;
-      ```
-
-17. Save the `parameters.c` file.
-
-18. Right-click on `CartPoleFirmware [domain_ps7_cortexa9_0]` and select **C/C++ Build Settings**.
-
-19. In the center box, choose **Libraries**.
-
-20. In the **Libraries** pane, click the `+` sign, and in the **Enter Value** box, type:
-    ```bash
-    m
-    ```
-
-21. Click **Apply and Close**.
-
-22. Update the input and output vector normalization values in `src/Zynq/neural-imitator.c` with the new model data from:
-    ```bash
-    Driver/CartPoleSimulation/SI_Toolkit_ASF/Experiments/Experiment-1/Models/[ModelName]
-    ```
-      The following files should be used:  
-          - `normalization_vec_a.csv`  
-          - `normalization_vec_b.csv`  
-          - `denormalization_vec_A.csv`  
-          - `denormalization_vec_B.csv`
-
-
-    Example normalization values:
-    ```c
-    float hls_normalize_a[] = {0.05600862, 1.00000000, 1.00000000, 5.20657063, 0.88941061, 1.00000000, 5.05586720};
-    float hls_normalize_b[] = {0.02947879, 0.00000000, 0.00000000, 0.01642668, 0.00083601, 0.00000000, 0.00045502};
-    float hls_denormalize_A[] = {1.0};
-    float hls_denormalize_B[] = {0.0};
-    ```
-
-      Additionally, update the model input/output size and precision if necessary in `src/Zynq/neural-imitator.c` and `neural-imitator.h`.
-
-24. Right-click on `CartPoleFirmware [domain_ps7_cortexa9_0]` and choose **Build Project**.
-
-25. Right-click on `CartPoleFirmware [cartpole_driver_design_wrapper]` and choose **Create Boot Image**.
-
-26. Leave the default settings and click **Create Image**.
-
-27. Retrieve the `.bin` file from the path displayed on the console to load onto an SD card and program the FPGA.
+### Notes
+- All scripts assume the repository is located at `~/physical-cartpole`.
 
 
 ## Step 7
